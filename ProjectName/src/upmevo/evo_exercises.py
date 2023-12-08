@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 
 
@@ -60,34 +58,32 @@ def exercise4(seed, tasks=0, resources=0, task_duration=[], task_resource=[], ta
         """
     np.random.seed(seed)
     tam_Poblacion=100
-    contador=0
     poblacion = inicializar_poblacion(tam_Poblacion,task_duration,tasks)
     fitness_poblacion = [funcionFitness(poblacion[a], task_dependencies, task_duration, task_resource, resources) for a in range(len(poblacion))]
-    mejor_fitness = 100
+    mejor_fitness = 1000
+    contador=0
     criterio=True
     while(criterio==True):
         padres = funcionSeleccion(poblacion,tam_Poblacion,task_dependencies,task_duration,task_resource,resources)
-        nueva_generacion=[]
         for k in range(len(padres) // 2):
+            nueva_generacion = []
             padre1 = padres[2*k]
             padre2 = padres[2*k+1]
-            hijo1 = funcion_Cruzar(padre1, padre2,tasks)
-            hijo2 = funcion_Cruzar(padre2, padre1,tasks)
-            hijo1 = funcion_Mutar(hijo1,tasks)
+            hijo1,hijo2 = funcion_Cruzar(padre1, padre2,tasks)
+            hijo1 = funcion_Mutar2(hijo1,tasks,task_duration)
             nueva_generacion.append(hijo1)
             if(2*k+1<len(padres)):
-                hijo2 = funcion_Mutar(hijo2,tasks)
+                hijo2 = funcion_Mutar2(hijo2,tasks,task_duration)
                 nueva_generacion.append(hijo2)
-        poblacion= funcion_seleccionAmbiental(nueva_generacion,poblacion,fitness_poblacion,task_dependencies,task_duration,task_resource,resources)
-        fitness_poblacion = [funcionFitness(poblacion[a], task_dependencies, task_duration, task_resource, resources) for a in range(len(poblacion))]
-        if (min(fitness_poblacion) >= mejor_fitness):
-            contador += 1
-            if (contador == 15):
-                criterio = False
+            poblacion= funcion_seleccionAmbiental(nueva_generacion,poblacion,fitness_poblacion)
+            fitness_poblacion = [funcionFitness(poblacion[a], task_dependencies, task_duration, task_resource, resources) for a in range(len(poblacion))]
+        if (mejor_fitness<=sum(task_duration)):
+                contador+=1
+                if(contador==30):
+                    criterio = False
         else:
-            mejor_fitness = min(fitness_poblacion)
-            contador=0
-        print(mejor_fitness)
+            if(min(fitness_poblacion)<mejor_fitness):
+                    mejor_fitness = min(fitness_poblacion)
     mejor_individuo=poblacion[fitness_poblacion.index(min(fitness_poblacion))]
     return mejor_individuo
 
@@ -115,7 +111,13 @@ def checkresources(individuo=[],recursos=[],recursoMax=0,task_duration=[]):
 
 
 def inicializar_poblacion(tam_poblacion=0, task_duration=[], tasks=0):
-    return [[np.random.randint(0, sum(task_duration)) for _ in range(tasks)] for _ in range(tam_poblacion)]
+    poblacion=[]
+    for a in range(tam_poblacion):
+        individuo=[]
+        for i in range(tasks):
+            individuo.append(np.random.randint(0,sum(task_duration)-task_duration[task_duration.index(min(task_duration))]))
+        poblacion.append(individuo)
+    return poblacion
 
 
 def funcionFitness_ej3(individuo=[], task_dependencies=[], task_duration=[], task_resource=[], resources=0):
@@ -131,11 +133,13 @@ def funcionFitness(individuo=[], task_dependencies=[], task_duration=[], task_re
     if (not checkresources(individuo, task_resource, resources, task_duration)):
         fitness += 30
     return fitness
-def funcionSeleccion(poblacion=[], tam_Poblacion=0, task_dependencies=[], task_duration=[], task_resource=[],
-                     resources=0):
+def funcionSeleccion(poblacion=[], tam_Poblacion=0, task_dependencies=[], task_duration=[], task_resource=[], resources=0):
     ganadores = []
-    for _ in range(tam_Poblacion):
-        seleccionados = random.sample(poblacion, 2)
+    for _ in range(tam_Poblacion//2):
+        seleccionados=[]
+        for i in range(2):
+            num= np.random.randint(0,len(poblacion))
+            seleccionados.append(poblacion[num])
         fitness_seleccionados = [funcionFitness(seleccionados[a], task_dependencies, task_duration, task_resource, resources) for a in range(2)]
         mejor = seleccionados[fitness_seleccionados.index(min(fitness_seleccionados))]
         ganadores.append(mejor)
@@ -145,18 +149,23 @@ def funcionSeleccion(poblacion=[], tam_Poblacion=0, task_dependencies=[], task_d
 def funcion_Cruzar(padre1=[], padre2=[], tasks=0):
     punto_corte = np.random.randint(1, tasks - 1)
     hijo = padre1[:punto_corte] + padre2[punto_corte:]
-    return hijo
+    hijo2= padre2[:punto_corte] + padre1[punto_corte:]
+    return hijo,hijo2
 
 
 def funcion_Mutar(hijo=[], tasks=0):
-    if (np.random.random() <= 1 / tasks):
+    if (np.random.rand() <= 1 / tasks):
         p1 = np.random.randint(0, tasks)
         p2 = np.random.randint(0, tasks)
         aux = hijo[p1]
         hijo[p1] = hijo[p2]
         hijo[p2] = aux
     return hijo
-
+def funcion_Mutar2(hijo=[], tasks=0,task_duration=[]):
+    for i in range(tasks):
+        if(np.random.rand()<=2/tasks):
+            hijo[i]=np.random.randint(0,sum(task_duration)-min(task_duration))
+    return hijo
 
 def generar_individuo_random(alphabet, length):
     indices = np.random.randint(0, len(alphabet), length)
@@ -166,16 +175,20 @@ def generar_individuo_random(alphabet, length):
 def roulette_wheel_selection(population, fitness, number_parents):
     population_fitness = sum(fitness)
     chromosome_probabilities = [f / population_fitness for f in fitness]
-    indices = np.random.choice(range(len(fitness)), number_parents, p=chromosome_probabilities)
+    indices = np.random.choice(range(len(fitness)), number_parents, chromosome_probabilities)
     return [population[i] for i in indices]
 
 
-def funcion_seleccionAmbiental(nueva_generacion=[],poblacion=[],fitness_poblacion=[],task_dependencies=[],task_duration=[],task_resource=[],resources=0):
-    poblacion_completa = poblacion + nueva_generacion
-    fitness_poblacion_completa = [funcionFitness(individuo,task_dependencies,task_duration,task_resource,resources) for individuo in poblacion_completa]
-    indices_mejores = sorted(range(len(poblacion_completa)), key=lambda i: fitness_poblacion_completa[i])[:len(nueva_generacion)]
-    nueva_generacion = [poblacion_completa[i] for i in indices_mejores]
-    return nueva_generacion
+def funcion_seleccionAmbiental(nueva_generacion=[],poblacion=[],fitness_poblacion=[]):
+    nueva_poblacion=[]
+    for i in range(len(nueva_generacion)):
+        nueva_poblacion.append(nueva_generacion[i])
+    for i in range(len(poblacion)-len(nueva_poblacion)):
+        posicion=fitness_poblacion.index(min(fitness_poblacion))
+        nueva_poblacion.append(poblacion[posicion])
+        poblacion.pop(posicion)
+        fitness_poblacion.pop(posicion)
+    return nueva_poblacion
 
 def one_point_crossover(parent1, parent2, p_cross):
     if np.random.random() < p_cross:
