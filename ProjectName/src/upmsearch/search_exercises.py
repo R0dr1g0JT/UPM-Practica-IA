@@ -129,7 +129,6 @@ def exercise1(tasks=0, resources=0, task_duration=[], task_resource=[], task_dep
             raices.append((i + 1, 0))
 
     raiz = mejor_raiz(raices, organizada_dependencias, task_duration)
-    print(raiz)
     cp.append(raiz)
     raices.pop(raices.index(raiz))
 
