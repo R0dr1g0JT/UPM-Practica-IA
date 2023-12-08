@@ -170,7 +170,7 @@ def exercise1(tasks=0, resources=0, task_duration=[], task_resource=[], task_dep
             cp = ordenar(cp)
             poda(cp, organizada_dependencias, solucion)
 
-    return solucion, makespan, time.time() - inicio
+    return solucion
 
 
 def exercise2(tasks=0, resources=0, task_duration=[], task_resource=[], task_dependencies=[]):
