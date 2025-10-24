@@ -5,6 +5,9 @@ El objetivo consiste en apilar las tareas de forma óptima para asegurar que los
 Las tareas vienen indicadas con el número de recursos usados y un tiempo de ejecución . 
 
 Para ello, se implementan distintos algoritmos de Inteligencia Artificial:
-    -Branch and Bound
-    -A* (A-estrella)
-    -Algoritmo Genético (en versiones básica y avanzada)."
+
+-Branch and Bound
+
+-A* (A-estrella)
+    
+-Algoritmo Genético (en versiones básica y avanzada)."
